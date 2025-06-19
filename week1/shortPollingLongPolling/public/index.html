@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Polling Demo</title>
+</head>
+<body>
+  <h2>Polling Demo</h2>
+
+  <div>
+    <h3>Short Polling</h3>
+    <p id="shortStatus">Status: --</p>
+    <button onclick="startShortPolling()">Start Short Polling</button>
+    <button onclick="stopShortPolling()">Stop</button>
+  </div>
+
+  <div>
+    <h3>Long Polling</h3>
+    <p id="longStatus">Status: --</p>
+    <button onclick="startLongPolling()">Start Long Polling</button>
+    <button onclick="stopLongPolling()">Stop</button>
+  </div>
+
+  <script>
+    let shortPollInterval = null;
+    let longPollActive = true;
+    let currentStatus = null;
+
+    function startShortPolling() {
+      if (shortPollInterval) return;
+
+      shortPollInterval = setInterval(() => {
+        fetch('/shortpoll/status')
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById("shortStatus").textContent = "Status: " + data.status;
+          });
+      }, 1000);
+    }
+
+    function stopShortPolling() {
+      clearInterval(shortPollInterval);
+      shortPollInterval = null;
+    }
+
+    function startLongPolling() {
+      longPollActive = true;
+      pollLong();
+    }
+
+    function stopLongPolling() {
+      longPollActive = false;
+    }
+
+    function pollLong() {
+      fetch(`/longpoll/status?status=${currentStatus || ""}`)
+        .then(res => res.json())
+        .then(data => {
+          currentStatus = data.status;
+          document.getElementById("longStatus").textContent = "Status: " + currentStatus;
+
+          // Re-initiate long poll if still active
+          if (longPollActive && currentStatus !== "SUCCESS") {
+            pollLong();
+          }
+        })
+        .catch(err => {
+          console.error("Error during long polling:", err);
+          if (longPollActive) {
+            setTimeout(pollLong, 1000); // retry after a second
+          }
+        });
+    }
+  </script>
+</body>
+</html>
