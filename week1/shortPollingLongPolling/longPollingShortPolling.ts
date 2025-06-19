@@ -26,13 +26,19 @@ function getStatusFromBackend(): string {
     }
 }
 
-app.get('/shortpoll/status', (req, res) => {
+app.get('/shortpoll/status', (req, res) => { // Shortpolling works like -> Frontend keeps calling this API and it keeps requesting status from
+    // backend and just sends back the response 
     let status = getStatusFromBackend();
     res.send({"status": status});
 })
 
-app.get('/longpoll/status', (req, res) => {
-    let currentStatus = req.query.status as string;  // ✅ correct
+app.get('/longpoll/status', (req, res) => { // long polling works like -> Frontend calls the long poll api with a status 
+    // the long poll API checks status from backend periodically, and only when there is a change in the status of the API response, does it send back the response to the frontend
+
+    /*
+        It's kinda like the work of polling is transferred from frontend (in teh case of a shortpolling API) to the backend (in case of a longpolling API).
+    */
+    let currentStatus = req.query.status as string; 
     const check = () => {
         const newStatus = getStatusFromBackend();
         if (newStatus !== currentStatus) {
